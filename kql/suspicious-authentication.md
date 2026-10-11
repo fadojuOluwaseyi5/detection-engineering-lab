@@ -31,6 +31,8 @@ let FailedAttempts =
     SigninLogs
     | where TimeGenerated > ago(24h)
     | where ResultType != "0"
+    | where isnotempty(UserPrincipalName)
+        and isnotempty(IPAddress)
     | summarize
         FailedCount = count(),
         FirstFailure = min(TimeGenerated),
@@ -41,6 +43,8 @@ let SuccessfulLogins =
     SigninLogs
     | where TimeGenerated > ago(24h)
     | where ResultType == "0"
+    | where isnotempty(UserPrincipalName)
+        and isnotempty(IPAddress)
     | project
         UserPrincipalName,
         IPAddress,
@@ -49,8 +53,10 @@ let SuccessfulLogins =
         Location,
         ConditionalAccessStatus;
 FailedAttempts
-| join kind=inner SuccessfulLogins on UserPrincipalName, IPAddress
-| where SuccessTime between (LastFailure .. LastFailure + 30m)
+| join kind=inner SuccessfulLogins
+    on UserPrincipalName, IPAddress
+| where SuccessTime between
+    (LastFailure .. LastFailure + 30m)
 | project
     UserPrincipalName,
     IPAddress,
